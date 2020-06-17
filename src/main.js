@@ -18,58 +18,122 @@ Vue.directive("draggable", {
     el.insertBefore(dragElement, el.firstChild);
     el.style.position = "absolute";
 
+    const move = (displayX, displayY) => {
+      el.style.top = startY + displayY + "px";
+      el.style.left = startX + displayX + "px";
+    }
+
+    const lockMoveToTop = (displayX, displayY) => {
+      if (displayY > 0) {
+        el.style.top = startY + displayY + "px";
+      }
+      el.style.left = startX + displayX + "px";
+    }
+
+    const lockMoveToRight = (displayX, displayY) => {
+      if (displayX < 0) {
+        el.style.left = startX + displayX + "px";
+      }
+      el.style.top = startY + displayY + "px";
+    }
+
+    const lockMoveToBottom = (displayX, displayY) => {
+      if (displayY < 0) {
+        el.style.top = startY + displayY + "px";
+      }
+      el.style.left = startX + displayX + "px";
+    }
+
+    const lockMoveToLeft = (displayX, displayY) => {
+      if (displayX > 0) {
+        el.style.left = startX + displayX + "px";
+      }
+      el.style.top = startY + displayY + "px";
+    }
+
+    const checkPassed = (coordinates) => {
+      if (coordinates.top <= 0 && coordinates.right >= coordinates.windowWidth) {
+        return "topRight"
+      } else if (coordinates.right >= coordinates.windowWidth && coordinates.bottom >= coordinates.windowHeight) {
+        return "rightBottom"
+      } else if (coordinates.bottom >= coordinates.windowHeight && coordinates.left <= 0) {
+        return "bottomLeft"
+      } else if (coordinates.left <= 0 && coordinates.top <= 0) {
+        return "leftTop"
+      } else if (coordinates.top <= 0) {
+        return "top";
+      } else if (coordinates.right >= coordinates.windowWidth) {
+        return "right"
+      } else if (coordinates.bottom >= coordinates.windowHeight) {
+        return "bottom"
+      } else if (coordinates.left <= 0) {
+        return "left"
+      }
+    }
+
+    const fixIfPassed = (coordinates) => {
+      if (coordinates.top + 10 < 10) {
+        el.style.top = "10px"
+      } else if (coordinates.right > coordinates.windowWidth) {
+        el.style.left = coordinates.windowWidth - el.clientWidth - 10 + "px"
+      } else if (coordinates.bottom > coordinates.windowHeight) {
+        el.style.top = coordinates.windowHeight - el.clientHeight - 10 + "px"
+      } else if (coordinates.left < 0) {
+        el.style.left = "10px"
+      }
+    }
+
     const mouseMove = (e) => {
       let displayX = e.clientX - initialX;
       let displayY = e.clientY - initialY;
-      let offsetBottom = el.offsetTop + el.clientHeight;
-      let offsetRight = el.offsetLeft + el.clientWidth + 10;
-      let windowHeight = document.documentElement.clientHeight;
-      let windowWidth = document.documentElement.clientWidth;
-
-      if (el.offsetTop <= 0 && el.offsetLeft <= 0) {
-        if (displayX > 0 || displayY > 0) {
-          el.style.top = startY + displayY + "px";
-          el.style.left = startX + displayX + "px";
-        }
-      } else if (el.offsetLeft <= 0 && offsetBottom >= windowHeight) {
-        if (displayX > 0 || displayY < 0) {
-          el.style.top = startY + displayY + "px";
-          el.style.left = startX + displayX + "px";
-        }
-      } else if (offsetBottom >= windowHeight && offsetRight >= windowWidth) {
-        if (displayX < 0 || displayY < 0) {
-          el.style.top = startY + displayY + "px";
-          el.style.left = startX + displayX + "px";
-        }
-      } else if (el.offsetTop <= 0 && offsetRight >= windowWidth) {
-        if (displayX < 0 || displayY > 0) {
-          el.style.top = startY + displayY + "px";
-          el.style.left = startX + displayX + "px";
-        }
-      } else if (el.offsetTop <= 0) {
-        if (displayY > 0) {
-          el.style.top = startY + displayY + "px";
-        }
-        el.style.left = startX + displayX + "px";
-      } else if (el.offsetLeft <= 0) {
-        if (displayX > 0) {
-          el.style.left = startX + displayX + "px";
-        }
-        el.style.top = startY + displayY + "px";
-      } else if (offsetBottom >= windowHeight) {
-        if (displayY < 0) {
-          el.style.top = startY + displayY + "px";
-        }
-        el.style.left = startX + displayX + "px";
-      } else if (offsetRight >= windowWidth) {
-        if (displayX < 0) {
-          el.style.left = startX + displayX + "px";
-        }
-        el.style.top = startY + displayY + "px";
-      } else {
-        el.style.top = startY + displayY + "px";
-        el.style.left = startX + displayX + "px";
+      let coordinates = {
+        top: el.offsetTop - 10,
+        right: el.offsetLeft + el.clientWidth + 10,
+        bottom: el.offsetTop + el.clientHeight + 10,
+        left: el.offsetLeft - 10,
+        windowHeight: document.documentElement.clientHeight,
+        windowWidth: document.documentElement.clientWidth
       }
+      let passedBorder = checkPassed(coordinates);
+
+      switch (passedBorder) {
+        case "top":
+          lockMoveToTop(displayX, displayY);
+          break;
+        case "right":
+          lockMoveToRight(displayX, displayY);
+          break;
+        case "bottom":
+          lockMoveToBottom(displayX, displayY);
+          break;
+        case "left":
+          lockMoveToLeft(displayX, displayY);
+          break;
+        case "topRight":
+          if (displayX < 0 || displayY > 0) {
+            move(displayX, displayY);
+          }
+          break;
+        case "rightBottom":
+          if (displayX < 0 || displayY < 0) {
+            move(displayX, displayY);
+          }
+          break;
+        case "bottomLeft":
+          if (displayX > 0 || displayY < 0) {
+            move(displayX, displayY);
+          }
+          break;
+        case "leftTop":
+          if (displayX > 0 || displayY > 0) {
+            move(displayX, displayY);
+          }
+          break;
+        default:
+          move(displayX, displayY);
+          break;
+      }
+      fixIfPassed(coordinates);
     }
 
     const mouseUp = () => {
