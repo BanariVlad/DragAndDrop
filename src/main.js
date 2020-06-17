@@ -51,6 +51,30 @@ Vue.directive("draggable", {
       el.style.top = startY + displayY + "px";
     }
 
+    const allowMoveForTopRight = (displayX, displayY) => {
+      if (displayX < 0 || displayY > 0) {
+        move(displayX, displayY);
+      }
+    }
+
+    const allowMoveForRightBottom = (displayX, displayY) => {
+      if (displayX < 0 || displayY < 0) {
+        move(displayX, displayY);
+      }
+    }
+
+    const allowMoveForBottomLeft = (displayX, displayY) => {
+      if (displayX > 0 || displayY < 0) {
+        move(displayX, displayY);
+      }
+    }
+
+    const allowMoveForLeftTop = (displayX, displayY) => {
+      if (displayX > 0 || displayY > 0) {
+        move(displayX, displayY);
+      }
+    }
+
     const checkPassed = (coordinates) => {
       if (coordinates.top <= 0 && coordinates.right >= coordinates.windowWidth) {
         return "topRight"
@@ -110,24 +134,16 @@ Vue.directive("draggable", {
           lockMoveToLeft(displayX, displayY);
           break;
         case "topRight":
-          if (displayX < 0 || displayY > 0) {
-            move(displayX, displayY);
-          }
+          allowMoveForTopRight(displayX, displayY);
           break;
         case "rightBottom":
-          if (displayX < 0 || displayY < 0) {
-            move(displayX, displayY);
-          }
+          allowMoveForRightBottom(displayX, displayY);
           break;
         case "bottomLeft":
-          if (displayX > 0 || displayY < 0) {
-            move(displayX, displayY);
-          }
+          allowMoveForBottomLeft(displayX, displayY);
           break;
         case "leftTop":
-          if (displayX > 0 || displayY > 0) {
-            move(displayX, displayY);
-          }
+          allowMoveForLeftTop(displayX, displayY);
           break;
         default:
           move(displayX, displayY);
