@@ -5,24 +5,102 @@ import router from "./router";
 Vue.config.productionTip = false;
 
 Vue.directive("draggable", {
-  bind(el) {
+  bind(el, binding, vNode) {
     let startX;
     let startY;
     let initialX;
     let initialY;
-    let dragElement = document.createElement("h2");
-    dragElement.style.cursor = "move";
-    dragElement.style.width = "100%";
-    dragElement.style.height = "20px";
-    dragElement.style.background = "#aeaeae";
-    const blockCoordinates = localStorage.getItem("blockCoordinates");
-    const saveCoordinates = JSON.parse(blockCoordinates);
+    let dragElement = el.querySelector(binding.arg);
     el.insertBefore(dragElement, el.firstChild);
     el.style.position = "absolute";
-    if (saveCoordinates !== null) {
-      el.style.top = saveCoordinates.y;
-      el.style.left = saveCoordinates.x;
-    }
+    el.style.top = binding.value.startPosition.y;
+    el.style.left = binding.value.startPosition.x;
+
+    const mouseMove = e => {
+      let displayX = e.clientX - initialX;
+      let displayY = e.clientY - initialY;
+      let coordinates = {
+        top: el.offsetTop - 10,
+        right: el.offsetLeft + el.clientWidth + 10,
+        bottom: el.offsetTop + el.clientHeight + 10,
+        left: el.offsetLeft - 10,
+        windowHeight: document.documentElement.clientHeight,
+        windowWidth: document.documentElement.clientWidth
+      };
+      let outsideBorder = checkIfOutside(coordinates);
+
+      switch (outsideBorder) {
+        case "top":
+          lockMoveToTop(displayX, displayY);
+          break;
+        case "right":
+          lockMoveToRight(displayX, displayY);
+          break;
+        case "bottom":
+          lockMoveToBottom(displayX, displayY);
+          break;
+        case "left":
+          lockMoveToLeft(displayX, displayY);
+          break;
+        case "topRight":
+          allowMoveForTopRight(displayX, displayY);
+          break;
+        case "rightBottom":
+          allowMoveForRightBottom(displayX, displayY);
+          break;
+        case "bottomLeft":
+          allowMoveForBottomLeft(displayX, displayY);
+          break;
+        case "leftTop":
+          allowMoveForLeftTop(displayX, displayY);
+          break;
+        default:
+          move(displayX, displayY);
+          break;
+      }
+      fixIfOutside(coordinates);
+    };
+
+    const checkIfOutside = coordinates => {
+      if (
+        coordinates.top <= 0 &&
+        coordinates.right >= coordinates.windowWidth
+      ) {
+        return "topRight";
+      } else if (
+        coordinates.right >= coordinates.windowWidth &&
+        coordinates.bottom >= coordinates.windowHeight
+      ) {
+        return "rightBottom";
+      } else if (
+        coordinates.bottom >= coordinates.windowHeight &&
+        coordinates.left <= 0
+      ) {
+        return "bottomLeft";
+      } else if (coordinates.left <= 0 && coordinates.top <= 0) {
+        return "leftTop";
+      } else if (coordinates.top <= 0) {
+        return "top";
+      } else if (coordinates.right >= coordinates.windowWidth) {
+        return "right";
+      } else if (coordinates.bottom >= coordinates.windowHeight) {
+        return "bottom";
+      } else if (coordinates.left <= 0) {
+        return "left";
+      }
+    };
+
+    const fixIfOutside = coordinates => {
+      if (coordinates.top < 0) {
+        el.style.top = "10px";
+      } else if (coordinates.right > coordinates.windowWidth) {
+        el.style.left = coordinates.windowWidth - el.clientWidth - 10 + "px";
+      } else if (coordinates.bottom > coordinates.windowHeight) {
+        el.style.top = coordinates.windowHeight - el.clientHeight - 10 + "px";
+      } else if (coordinates.left < 0) {
+        el.style.left = "10px";
+      }
+    };
 
     const move = (displayX, displayY) => {
       el.style.top = startY + displayY + "px";
@@ -81,106 +159,26 @@ Vue.directive("draggable", {
       }
     };
 
-    const checkPassed = coordinates => {
-      if (
-        coordinates.top <= 0 &&
-        coordinates.right >= coordinates.windowWidth
-      ) {
-        return "topRight";
-      } else if (
-        coordinates.right >= coordinates.windowWidth &&
-        coordinates.bottom >= coordinates.windowHeight
-      ) {
-        return "rightBottom";
-      } else if (
-        coordinates.bottom >= coordinates.windowHeight &&
-        coordinates.left <= 0
-      ) {
-        return "bottomLeft";
-      } else if (coordinates.left <= 0 && coordinates.top <= 0) {
-        return "leftTop";
-      } else if (coordinates.top <= 0) {
-        return "top";
-      } else if (coordinates.right >= coordinates.windowWidth) {
-        return "right";
-      } else if (coordinates.bottom >= coordinates.windowHeight) {
-        return "bottom";
-      } else if (coordinates.left <= 0) {
-        return "left";
-      }
-    };
-
-    const fixIfPassed = coordinates => {
-      if (coordinates.top + 10 < 10) {
-        el.style.top = "10px";
-      } else if (coordinates.right > coordinates.windowWidth) {
-        el.style.left = coordinates.windowWidth - el.clientWidth - 10 + "px";
-      } else if (coordinates.bottom > coordinates.windowHeight) {
-        el.style.top = coordinates.windowHeight - el.clientHeight - 10 + "px";
-      } else if (coordinates.left < 0) {
-        el.style.left = "10px";
-      }
-    };
-
-    const mouseMove = e => {
-      let displayX = e.clientX - initialX;
-      let displayY = e.clientY - initialY;
-      let coordinates = {
-        top: el.offsetTop - 10,
-        right: el.offsetLeft + el.clientWidth + 10,
-        bottom: el.offsetTop + el.clientHeight + 10,
-        left: el.offsetLeft - 10,
-        windowHeight: document.documentElement.clientHeight,
-        windowWidth: document.documentElement.clientWidth
-      };
-      let passedBorder = checkPassed(coordinates);
-
-      switch (passedBorder) {
-        case "top":
-          lockMoveToTop(displayX, displayY);
-          break;
-        case "right":
-          lockMoveToRight(displayX, displayY);
-          break;
-        case "bottom":
-          lockMoveToBottom(displayX, displayY);
-          break;
-        case "left":
-          lockMoveToLeft(displayX, displayY);
-          break;
-        case "topRight":
-          allowMoveForTopRight(displayX, displayY);
-          break;
-        case "rightBottom":
-          allowMoveForRightBottom(displayX, displayY);
-          break;
-        case "bottomLeft":
-          allowMoveForBottomLeft(displayX, displayY);
-          break;
-        case "leftTop":
-          allowMoveForLeftTop(displayX, displayY);
-          break;
-        default:
-          move(displayX, displayY);
-          break;
-      }
-      fixIfPassed(coordinates);
-    };
-
     const mouseUp = () => {
       document.removeEventListener("mousemove", mouseMove);
       document.removeEventListener("mouseup", mouseUp);
-      let blockCoordinates = {
+      emit(vNode, "drop", {
         x: el.style.left,
         y: el.style.top
-      };
-      localStorage.setItem(
-        "blockCoordinates",
-        JSON.stringify(blockCoordinates)
-      );
+      });
     };
 
-    dragElement.addEventListener("mousedown", function(e) {
+    const emit = (vnode, name, data) => {
+      const handlers =
+        (vnode.data && vnode.data.on) ||
+        (vnode.componentOptions && vnode.componentOptions.listeners);
+
+      if (handlers && handlers[name]) {
+        handlers[name].fns(data);
+      }
+    };
+
+    dragElement.addEventListener("mousedown", e => {
       startX = el.offsetLeft;
       startY = el.offsetTop;
       initialX = e.clientX;
